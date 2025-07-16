@@ -78,7 +78,17 @@ private void printerImpl(Out,T)(ref Out o, T t) {
 			printerImpl(o, t[i]);
 		}
 		o("]");
-	
+	} else static if(is(T AA : AA[U], U)) {
+		o("[");
+		long i;
+		foreach(key, value; t) {
+			o(i > 0 ? ", " : " ");
+			o(key);
+			o(" : ");
+			printerImpl(o, value);
+			++i;
+		}
+		o("]");
 	} else static if(is(UT : DateTime) || is(UT : TimeOfDay) || is(UT : Date)
 			|| is(UT : SysTime))
 	{
@@ -234,14 +244,26 @@ unittest {
 	Bar b;
 	string s = format("%s", aggPrinter(b));
 	string exp = 
-	`Bar(foo: Foo(a: 0, b: nan, dt: 0001-01-01T00:00:00, d: 0001-01-01, tod: 00:00:00), foo2: null, c: "", dur: 0 hnsecs, tdur: MonoTimeImpl!ClockType.normal(_ticks: 0), foos: [])`
+	`Bar(foo: Foo(a: 0, b: nan, dt: 0001-01-01T00:00:00, d: 0001-01-01, tod: 00:00:00), foo2: null, c: "", dur: 0 hnsecs, tdur: MonoTimeImpl!(ClockType.normal)(_ticks: 0), foos: [])`
 	;
-	assert(s == exp, s);
+	assert(s == exp, "\n" ~ s ~ "\n" ~ exp);
 
 	const(Bar) c;
 	s = format("%s", aggPrinter(c));
 	exp = 
-	`const(Bar)(foo: const(Foo)(a: 0, b: nan, dt: 0001-01-01T00:00:00, d: 0001-01-01, tod: 00:00:00), foo2: null, c: "", dur: 0 hnsecs, tdur: const(MonoTimeImpl!ClockType.normal)(_ticks: 0), foos: [])`
+	`const(Bar)(foo: const(Foo)(a: 0, b: nan, dt: 0001-01-01T00:00:00, d: 0001-01-01, tod: 00:00:00), foo2: null, c: "", dur: 0 hnsecs, tdur: const(MonoTimeImpl!(ClockType.normal))(_ticks: 0), foos: [])`
 	;
-	assert(s == exp, s);
+	assert(s == exp, "\n" ~ s ~ "\n" ~ exp);
+}
+
+unittest {
+	struct Foo {
+		string[string] a;
+	}
+	Foo f;
+	f.a["a"] = "b";
+
+	string s = format("%s", aggPrinter(f));
+	string exp = "Foo(a: [ a : \"b\"])";
+	assert(s == exp, "\n" ~ s ~ "\n" ~ exp);
 }
